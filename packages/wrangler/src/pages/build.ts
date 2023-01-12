@@ -76,7 +76,7 @@ export function Options(yargs: Argv) {
 				description: "The directory to output static assets to",
 			},
 			"node-compat": {
-				describe: "Enable node.js compatibility",
+				describe: "Enable Node.js compatibility",
 				default: false,
 				type: "boolean",
 				hidden: true,
@@ -103,7 +103,7 @@ export const Handler = async ({
 	watch,
 	plugin,
 	buildOutputDirectory,
-	nodeCompat,
+	nodeCompat: legacyNodeCompat,
 	bindings,
 }: PagesBuildArgs) => {
 	if (!isInPagesCI) {
@@ -111,9 +111,9 @@ export const Handler = async ({
 		logger.log(pagesBetaWarning);
 	}
 
-	if (nodeCompat) {
+	if (legacyNodeCompat) {
 		console.warn(
-			"Enabling node.js compatibility mode for builtins and globals. This is experimental and has serious tradeoffs. Please see https://github.com/ionic-team/rollup-plugin-node-polyfills/ for more details."
+			"Enabling Node.js compatibility mode for builtins and globals. This is experimental and has serious tradeoffs. Please see https://github.com/ionic-team/rollup-plugin-node-polyfills/ for more details."
 		);
 	}
 
@@ -139,7 +139,7 @@ export const Handler = async ({
 			watch,
 			plugin,
 			buildOutputDirectory,
-			nodeCompat,
+			legacyNodeCompat,
 			routesOutputPath,
 			local: false,
 			d1Databases,
@@ -173,7 +173,7 @@ export async function buildFunctions({
 	plugin = false,
 	buildOutputDirectory,
 	routesOutputPath,
-	nodeCompat,
+	legacyNodeCompat,
 	local,
 	d1Databases,
 }: Partial<
@@ -186,9 +186,9 @@ export async function buildFunctions({
 		| "watch"
 		| "plugin"
 		| "buildOutputDirectory"
-		| "nodeCompat"
 	>
 > & {
+	legacyNodeCompat?: boolean;
 	functionsDirectory: string;
 	onEnd?: () => void;
 	outfile: Required<PagesBuildArgs>["outfile"];
@@ -242,7 +242,7 @@ export async function buildFunctions({
 				minify,
 				sourcemap,
 				watch,
-				nodeCompat,
+				legacyNodeCompat,
 				functionsDirectory: absoluteFunctionsDirectory,
 				local,
 				betaD1Shims: d1Databases,
@@ -263,7 +263,7 @@ export async function buildFunctions({
 				betaD1Shims: d1Databases,
 				onEnd,
 				buildOutputDirectory,
-				nodeCompat,
+				legacyNodeCompat,
 			})
 		);
 	}

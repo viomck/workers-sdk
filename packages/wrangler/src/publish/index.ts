@@ -153,7 +153,7 @@ export function publishOptions(yargs: Argv<CommonYargsOptions>) {
 				type: "boolean",
 			})
 			.option("node-compat", {
-				describe: "Enable node.js compatibility",
+				describe: "Enable Node.js compatibility",
 				type: "boolean",
 			})
 			.option("dry-run", {
@@ -259,7 +259,7 @@ export async function publishHandler(args: ArgumentsCamelCase<PublishArgs>) {
 		assetPaths,
 		legacyEnv: isLegacyEnv(config),
 		minify: args.minify,
-		nodeCompat: args.nodeCompat,
+		legacyNodeCompat: args.nodeCompat,
 		isWorkersSite: Boolean(args.site || config.site),
 		outDir: args.outdir,
 		dryRun: args.dryRun,

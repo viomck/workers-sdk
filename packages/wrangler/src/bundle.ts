@@ -101,7 +101,7 @@ export async function bundleWorker(
 		watch?: esbuild.WatchMode | boolean;
 		tsconfig?: string;
 		minify?: boolean;
-		nodeCompat?: boolean;
+		legacyNodeCompat?: boolean;
 		define: Config["define"];
 		checkFetch: boolean;
 		services?: Config["services"];
@@ -129,7 +129,7 @@ export async function bundleWorker(
 		watch,
 		tsconfig,
 		minify,
-		nodeCompat,
+		legacyNodeCompat,
 		checkFetch,
 		local,
 		assets,
@@ -338,7 +338,7 @@ export async function bundleWorker(
 				// use process.env["NODE_ENV" + ""] so that esbuild doesn't replace it
 				// when we do a build of wrangler. (re: https://github.com/cloudflare/wrangler2/issues/1477)
 				"process.env.NODE_ENV": `"${process.env["NODE_ENV" + ""]}"`,
-				...(nodeCompat ? { global: "globalThis" } : {}),
+				...(legacyNodeCompat ? { global: "globalThis" } : {}),
 				...(checkFetch ? { fetch: "checkedFetch" } : {}),
 				...options.define,
 			},
@@ -351,7 +351,7 @@ export async function bundleWorker(
 		},
 		plugins: [
 			moduleCollector.plugin,
-			...(nodeCompat
+			...(legacyNodeCompat
 				? [NodeGlobalsPolyfills({ buffer: true }), NodeModulesPolyfills()]
 				: []),
 			...(plugins || []),
@@ -369,7 +369,8 @@ export async function bundleWorker(
 	try {
 		result = await esbuild.build(buildOptions);
 	} catch (e) {
-		if (!nodeCompat && isBuildFailure(e)) rewriteNodeCompatBuildFailure(e);
+		if (!legacyNodeCompat && isBuildFailure(e))
+			rewriteNodeCompatBuildFailure(e);
 		throw e;
 	}
 

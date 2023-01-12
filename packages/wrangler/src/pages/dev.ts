@@ -135,7 +135,7 @@ export function Options(yargs: Argv) {
 				requiresArg: true,
 			},
 			"node-compat": {
-				describe: "Enable node.js compatibility",
+				describe: "Enable Node.js compatibility",
 				default: false,
 				type: "boolean",
 				hidden: true,
@@ -179,7 +179,7 @@ export const Handler = async ({
 	experimentalEnableLocalPersistence,
 	persist,
 	persistTo,
-	"node-compat": nodeCompat,
+	"node-compat": legacyNodeCompat,
 	"experimental-local": experimentalLocal,
 	config: config,
 	_: [_pages, _dev, ...remaining],
@@ -297,9 +297,9 @@ export const Handler = async ({
 		// Try to use Functions
 		scriptPath = join(tmpdir(), `./functionsWorker-${Math.random()}.mjs`);
 
-		if (nodeCompat) {
+		if (legacyNodeCompat) {
 			console.warn(
-				"Enabling node.js compatibility mode for builtins and globals. This is experimental and has serious tradeoffs. Please see https://github.com/ionic-team/rollup-plugin-node-polyfills/ for more details."
+				"Enabling Node.js compatibility mode for builtins and globals. This is experimental and has serious tradeoffs. Please see https://github.com/ionic-team/rollup-plugin-node-polyfills/ for more details."
 			);
 		}
 
@@ -314,7 +314,7 @@ export const Handler = async ({
 					watch: true,
 					onEnd,
 					buildOutputDirectory: directory,
-					nodeCompat,
+					legacyNodeCompat,
 					local: true,
 				});
 				await metrics.sendMetricsEvent("build pages functions");
@@ -486,7 +486,7 @@ export const Handler = async ({
 		localProtocol,
 		compatibilityDate,
 		compatibilityFlags,
-		nodeCompat,
+		nodeCompat: legacyNodeCompat,
 		vars: Object.fromEntries(
 			bindings
 				.map((binding) => binding.toString().split("="))

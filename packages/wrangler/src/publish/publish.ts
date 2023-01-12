@@ -56,7 +56,7 @@ type Props = {
 	tsconfig: string | undefined;
 	isWorkersSite: boolean;
 	minify: boolean | undefined;
-	nodeCompat: boolean | undefined;
+	legacyNodeCompat: boolean | undefined;
 	outDir: string | undefined;
 	dryRun: boolean | undefined;
 	noBundle: boolean | undefined;
@@ -333,10 +333,10 @@ See https://developers.cloudflare.com/workers/platform/compatibility-dates for m
 
 	const minify = props.minify ?? config.minify;
 
-	const nodeCompat = props.nodeCompat ?? config.node_compat;
-	if (nodeCompat) {
+	const legacyNodeCompat = props.legacyNodeCompat ?? config.node_compat;
+	if (legacyNodeCompat) {
 		logger.warn(
-			"Enabling node.js compatibility mode for built-ins and globals. This is experimental and has serious tradeoffs. Please see https://github.com/ionic-team/rollup-plugin-node-polyfills/ for more details."
+			"Enabling Node.js compatibility mode for built-ins and globals. This is experimental and has serious tradeoffs. Please see https://github.com/ionic-team/rollup-plugin-node-polyfills/ for more details."
 		);
 	}
 
@@ -347,7 +347,7 @@ See https://developers.cloudflare.com/workers/platform/compatibility-dates for m
 		);
 	}
 
-	if (props.noBundle && nodeCompat) {
+	if (props.noBundle && legacyNodeCompat) {
 		logger.warn(
 			"`--node-compat` and `--no-bundle` can't be used together. If you want to polyfill Node.js built-ins and disable Wrangler's bundling, please polyfill as part of your own bundling process."
 		);
@@ -356,7 +356,7 @@ See https://developers.cloudflare.com/workers/platform/compatibility-dates for m
 	const scriptName = props.name;
 	assert(
 		scriptName,
-		'You need to provide a name when publishing a worker. Either pass it as a cli arg with `--name <name>` or in your config file as `name = "<name>"`'
+		'You need to provide a name when publishing a worker. Either pass it as a CLI arg with `--name <name>` or in your config file as `name = "<name>"`'
 	);
 
 	assert(
@@ -471,7 +471,7 @@ See https://developers.cloudflare.com/workers/platform/compatibility-dates for m
 						rules: props.rules,
 						tsconfig: props.tsconfig ?? config.tsconfig,
 						minify,
-						nodeCompat,
+						legacyNodeCompat,
 						define: { ...config.define, ...props.defines },
 						checkFetch: false,
 						assets: config.assets && {

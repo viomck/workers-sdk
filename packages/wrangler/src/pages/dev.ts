@@ -258,6 +258,8 @@ export const Handler = async ({
 
 	let scriptPath = "";
 
+	const nodejsCompat = compatibilityFlags?.includes("nodejs_compat");
+
 	if (usingWorkerScript) {
 		scriptPath = workerScriptPath;
 		let runBuild = async () => {
@@ -275,6 +277,7 @@ export const Handler = async ({
 						workerScriptPath,
 						outfile: scriptPath,
 						directory: directory ?? ".",
+						nodejsCompat,
 						local: true,
 						sourcemap: true,
 						watch: true,
@@ -303,6 +306,13 @@ export const Handler = async ({
 			);
 		}
 
+		if (legacyNodeCompat && nodejsCompat) {
+			throw new FatalError(
+				"The `nodejs_compat` compatibility flag cannot be used in conjunction with the legacy `--node-compat` flag. If you want to use the Workers runtime Node.js compatibility features, please remove the `--node-compat` argument from your CLI command or `node_compat = true` from your config file.",
+				1
+			);
+		}
+
 		logger.log(`Compiling worker to "${scriptPath}"...`);
 		const onEnd = () => scriptReadyResolve();
 		try {
@@ -315,6 +325,7 @@ export const Handler = async ({
 					onEnd,
 					buildOutputDirectory: directory,
 					legacyNodeCompat,
+					nodejsCompat,
 					local: true,
 				});
 				await metrics.sendMetricsEvent("build pages functions");

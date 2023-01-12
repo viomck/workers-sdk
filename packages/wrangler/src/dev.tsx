@@ -422,6 +422,7 @@ export async function startDev(args: StartDevOptions) {
 		const {
 			entry,
 			legacyNodeCompat,
+			nodejsCompat,
 			upstreamProtocol,
 			zoneId,
 			host,
@@ -461,6 +462,7 @@ export async function startDev(args: StartDevOptions) {
 					legacyEnv={isLegacyEnv(configParam)}
 					minify={args.minify ?? configParam.minify}
 					legacyNodeCompat={legacyNodeCompat}
+					nodejsCompat={nodejsCompat}
 					build={configParam.build || {}}
 					define={{ ...configParam.define, ...cliDefines }}
 					initialMode={
@@ -559,6 +561,7 @@ export async function startApiDev(args: StartDevOptions) {
 	const {
 		entry,
 		legacyNodeCompat,
+		nodejsCompat,
 		upstreamProtocol,
 		zoneId,
 		host,
@@ -598,6 +601,7 @@ export async function startApiDev(args: StartDevOptions) {
 			legacyEnv: isLegacyEnv(configParam),
 			minify: args.minify ?? configParam.minify,
 			legacyNodeCompat,
+			nodejsCompat,
 			build: configParam.build || {},
 			define: { ...config.define, ...cliDefines },
 			initialMode: args.local ? "local" : "remote",
@@ -786,6 +790,14 @@ async function validateDevServerSettings(
 			"Enabling Node.js compatibility mode for built-ins and globals. This is experimental and has serious tradeoffs. Please see https://github.com/ionic-team/rollup-plugin-node-polyfills/ for more details."
 		);
 	}
+	const compatibilityFlags =
+		args.compatibilityFlags ?? config.compatibility_flags;
+	const nodejsCompat = compatibilityFlags.includes("nodejs_compat");
+	if (legacyNodeCompat && nodejsCompat) {
+		throw new Error(
+			"The `nodejs_compat` compatibility flag cannot be used in conjunction with the legacy `--node-compat` flag. If you want to use the Workers runtime Node.js compatibility features, please remove the `--node-compat` argument from your CLI command or `node_compat = true` from your config file."
+		);
+	}
 
 	if (args.experimentalEnableLocalPersistence) {
 		logger.warn(
@@ -807,6 +819,7 @@ async function validateDevServerSettings(
 		entry,
 		upstreamProtocol,
 		legacyNodeCompat,
+		nodejsCompat,
 		getLocalPort,
 		getInspectorPort,
 		zoneId,

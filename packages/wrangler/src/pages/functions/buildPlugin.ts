@@ -33,6 +33,10 @@ export function buildPlugin({
 			sourcemap,
 			watch,
 			legacyNodeCompat,
+			// We don't currently have a mechanism for Plugins 'requiring' a specific compat date/flag,
+			// but if someone wants to publish a Plugin which does require this new `nodejs_compat` flag
+			// and they document that on their README.md, we should let them.
+			nodejsCompat: true,
 			define: {},
 			betaD1Shims: (betaD1Shims || []).map(
 				(binding) => `${D1_BETA_PREFIX}${binding}`

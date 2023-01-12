@@ -99,6 +99,7 @@ export async function startDevServer(
 			tsconfig: props.tsconfig,
 			minify: props.minify,
 			legacyNodeCompat: props.legacyNodeCompat,
+			nodejsCompat: props.nodejsCompat,
 			define: props.define,
 			noBundle: props.noBundle,
 			assets: props.assetsConfig,
@@ -210,6 +211,7 @@ async function runEsbuild({
 	tsconfig,
 	minify,
 	legacyNodeCompat,
+	nodejsCompat,
 	define,
 	noBundle,
 	workerDefinitions,
@@ -232,6 +234,7 @@ async function runEsbuild({
 	tsconfig: string | undefined;
 	minify: boolean | undefined;
 	legacyNodeCompat: boolean | undefined;
+	nodejsCompat: boolean | undefined;
 	noBundle: boolean;
 	workerDefinitions: WorkerRegistry;
 	firstPartyWorkerDevFacade: boolean | undefined;
@@ -264,6 +267,7 @@ async function runEsbuild({
 				tsconfig,
 				minify,
 				legacyNodeCompat,
+				nodejsCompat,
 				define,
 				checkFetch: true,
 				assets: assets && {

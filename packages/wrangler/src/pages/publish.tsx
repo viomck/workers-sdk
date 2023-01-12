@@ -279,6 +279,11 @@ export const Handler = async ({
 		isProduction = project.production_branch === branch;
 	}
 
+	const deploymentConfig =
+		project.deployment_configs[isProduction ? "production" : "preview"];
+	const nodejsCompat =
+		deploymentConfig.compatibility_flags?.includes("nodejs_compat");
+
 	/**
 	 * Evaluate if this is an Advanced Mode or Pages Functions project. If Advanced Mode, we'll
 	 * go ahead and upload `_worker.js` as is, but if Pages Functions, we need to attempt to build
@@ -309,10 +314,8 @@ export const Handler = async ({
 				buildOutputDirectory: dirname(outfile),
 				routesOutputPath,
 				local: false,
-				d1Databases: Object.keys(
-					project.deployment_configs[isProduction ? "production" : "preview"]
-						.d1_databases ?? {}
-				),
+				d1Databases: Object.keys(deploymentConfig.d1_databases ?? {}),
+				nodejsCompat,
 			});
 
 			builtFunctions = readFileSync(outfile, "utf-8");
@@ -390,6 +393,7 @@ export const Handler = async ({
 				workerScriptPath,
 				outfile,
 				directory: directory ?? ".",
+				nodejsCompat,
 				local: false,
 				sourcemap: true,
 				watch: false,

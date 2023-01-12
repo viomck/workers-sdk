@@ -6568,6 +6568,58 @@ addEventListener('fetch', event => {});`
 		});
 	});
 
+	describe("`nodejs_compat` compatibility flag", () => {
+		it('when absent, should error on any "external" `node:*` imports', async () => {
+			writeWranglerToml();
+			fs.writeFileSync(
+				"index.js",
+				`
+      import AsyncHooks from 'node:async_hooks';
+      console.log(AsyncHooks);
+      export default {}
+      `
+			);
+			let err: esbuild.BuildFailure | undefined;
+			try {
+				await runWrangler("publish index.js --dry-run"); // expecting this to throw, as node compatibility isn't enabled
+			} catch (e) {
+				err = e as esbuild.BuildFailure;
+			}
+			expect(
+				esbuild.formatMessagesSync(err?.errors ?? [], { kind: "error" }).join()
+			).toMatch(/Could not resolve "node:async_hooks"/);
+		});
+
+		it('when present, should support any "external" `node:*` imports', async () => {
+			writeWranglerToml();
+			fs.writeFileSync(
+				"index.js",
+				`
+      import AsyncHooks from 'node:async_hooks';
+      console.log(AsyncHooks);
+      export default {}
+      `
+			);
+
+			await runWrangler(
+				"publish index.js --dry-run --outdir=dist --compatibility-flag=nodejs_compat"
+			);
+
+			expect(std).toMatchInlineSnapshot(`
+			Object {
+			  "debug": "",
+			  "err": "",
+			  "out": "Total Upload: xx KiB / gzip: xx KiB
+			--dry-run: exiting now.",
+			  "warn": "",
+			}
+		`);
+			expect(fs.readFileSync("dist/index.js", { encoding: "utf-8" })).toContain(
+				`import AsyncHooks from "node:async_hooks";`
+			);
+		});
+	});
+
 	describe("bundle reporter", () => {
 		it("should print the bundle size", async () => {
 			fs.writeFileSync(

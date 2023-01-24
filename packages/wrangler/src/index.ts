@@ -51,6 +51,7 @@ import { whoami } from "./whoami";
 import type { Config } from "./config";
 import type { CommonYargsArgv, CommonYargsOptions } from "./yargs-types";
 import type Yargs from "yargs";
+import { confirm } from "./dialogs";
 
 const resetColor = "\x1b[0m";
 const fgGreenColor = "\x1b[32m";
@@ -594,6 +595,14 @@ export function createCLIParser(argv: string[]) {
 								default: false,
 							}),
 					async (rollbackYargs) => {
+						if (
+							!(await confirm(
+								"You are about to Rollback to a previous deployment on the Edge, would you like to continue"
+							))
+						) {
+							return;
+						}
+
 						const { accountId, scriptName, config } =
 							await initializeDeployments(rollbackYargs, deploymentsWarning);
 

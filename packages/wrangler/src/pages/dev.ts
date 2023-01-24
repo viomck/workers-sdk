@@ -10,24 +10,24 @@ import { FatalError } from "../errors";
 import { logger } from "../logger";
 import * as metrics from "../metrics";
 import { getBasePath } from "../paths";
-import { buildFunctions } from "./build";
+import { buildFunctions } from "./buildFunctions";
 import { ROUTES_SPEC_VERSION, SECONDS_TO_WAIT_FOR_PROXY } from "./constants";
 import { FunctionsNoRoutesError, getFunctionsNoRoutesWarning } from "./errors";
 import { buildRawWorker, checkRawWorker } from "./functions/buildWorker";
 import { validateRoutes } from "./functions/routes-validation";
 import { CLEANUP, CLEANUP_CALLBACKS, pagesBetaWarning } from "./utils";
 import type { AdditionalDevProps } from "../dev";
-import type { YargsOptionsToInterface } from "../yargs-types";
+import type {
+	CommonYargsArgv,
+	StrictYargsOptionsToInterface,
+} from "../yargs-types";
 import type { RoutesJSONSpec } from "./functions/routes-transformation";
-import type { Argv } from "yargs";
 
 const DURABLE_OBJECTS_BINDING_REGEXP = new RegExp(
 	/^(?<binding>[^=]+)=(?<className>[^@\s]+)(@(?<scriptName>.*)$)?$/
 );
 
-type PagesDevArgs = YargsOptionsToInterface<typeof Options>;
-
-export function Options(yargs: Argv) {
+export function Options(yargs: CommonYargsArgv) {
 	return yargs
 		.positional("directory", {
 			type: "string",
@@ -88,6 +88,13 @@ export function Options(yargs: Argv) {
 				type: "boolean",
 				default: true,
 				description: "Whether to run bundling on `_worker.js`",
+			},
+			"experimental-worker-bundle": {
+				type: "boolean",
+				default: false,
+				hidden: true,
+				description:
+					"Whether to process non-JS module imports or not, such as wasm/text/binary, when we run bundling on `functions` or `_worker.js`",
 			},
 			binding: {
 				type: "array",
@@ -166,38 +173,37 @@ export function Options(yargs: Argv) {
 export const Handler = async ({
 	local,
 	directory,
-	"compatibility-date": compatibilityDate,
-	"compatibility-flags": compatibilityFlags,
+	compatibilityDate,
+	compatibilityFlags,
 	ip,
 	port,
-	"inspector-port": inspectorPort,
+	inspectorPort,
 	proxy: requestedProxyPort,
-	"script-path": singleWorkerScriptPath,
 	bundle,
 	noBundle,
+	experimentalWorkerBundle,
+	scriptPath: singleWorkerScriptPath,
 	binding: bindings = [],
 	kv: kvs = [],
 	do: durableObjects = [],
 	d1: d1s = [],
 	r2: r2s = [],
-	"live-reload": liveReload,
-	"local-protocol": localProtocol,
+	liveReload,
+	localProtocol,
 	experimentalEnableLocalPersistence,
 	persist,
 	persistTo,
-	"node-compat": nodeCompat,
-	"experimental-local": experimentalLocal,
+	nodeCompat,
+	experimentalLocal,
 	config: config,
 	_: [_pages, _dev, ...remaining],
 	logLevel,
-}: PagesDevArgs) => {
+}: StrictYargsOptionsToInterface<typeof Options>) => {
 	// Beta message for `wrangler pages <commands>` usage
 	logger.log(pagesBetaWarning);
 
-	type LogLevelArg = "debug" | "info" | "log" | "warn" | "error" | "none";
 	if (logLevel) {
-		// The YargsOptionsToInterface doesn't handle the passing in of Unions from choices in Yargs
-		logger.loggerLevel = logLevel as LogLevelArg;
+		logger.loggerLevel = logLevel;
 	}
 
 	if (!local) {
@@ -270,7 +276,7 @@ export const Handler = async ({
 			await checkRawWorker(workerScriptPath, () => scriptReadyResolve());
 		};
 
-		const enableBundling = bundle || !noBundle;
+		const enableBundling = bundle || !noBundle || experimentalWorkerBundle;
 		if (enableBundling) {
 			// We want to actually run the `_worker.js` script through the bundler
 			// So update the final path to the script that will be uploaded and
@@ -286,6 +292,7 @@ export const Handler = async ({
 						sourcemap: true,
 						watch: true,
 						onEnd: () => scriptReadyResolve(),
+						experimentalWorkerBundle,
 					});
 				} catch (e: unknown) {
 					logger.warn("Failed to bundle _worker.js.", e);
@@ -323,6 +330,7 @@ export const Handler = async ({
 					buildOutputDirectory: directory,
 					nodeCompat,
 					local: true,
+					experimentalWorkerBundle,
 				});
 				await metrics.sendMetricsEvent("build pages functions");
 			};

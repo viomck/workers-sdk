@@ -69,10 +69,11 @@ describe("pages", () => {
 		  wrangler pages publish [directory]             🆙 Publish a directory of static assets as a Pages deployment
 
 		Flags:
-		  -c, --config   Path to .toml configuration file  [string]
-		  -e, --env      Environment to use for operations and .env files  [string]
-		  -h, --help     Show help  [boolean]
-		  -v, --version  Show version number  [boolean]
+		  -j, --experimental-json-config  Experimental: Support wrangler.json  [boolean]
+		  -c, --config                    Path to .toml configuration file  [string]
+		  -e, --env                       Environment to use for operations and .env files  [string]
+		  -h, --help                      Show help  [boolean]
+		  -v, --version                   Show version number  [boolean]
 
 		🚧 'wrangler pages <command>' is a beta command. Please report any issues to https://github.com/cloudflare/wrangler2/issues/new/choose"
 	`);
@@ -340,9 +341,10 @@ describe("pages", () => {
 			  directory  The directory of static files to upload  [string]
 
 			Flags:
-			  -e, --env      Environment to use for operations and .env files  [string]
-			  -h, --help     Show help  [boolean]
-			  -v, --version  Show version number  [boolean]
+			  -j, --experimental-json-config  Experimental: Support wrangler.json  [boolean]
+			  -e, --env                       Environment to use for operations and .env files  [string]
+			  -h, --help                      Show help  [boolean]
+			  -v, --version                   Show version number  [boolean]
 
 			Options:
 			      --project-name    The name of the project you want to deploy to  [string]
@@ -2543,19 +2545,20 @@ and that at least one include rule is provided.
 			);
 
 			await runWrangler("pages project upload .");
-
 			expect(requests.length).toBe(3);
 
-			const resolvedRequests = await Promise.all(
-				requests.map(async (req) => await req.json<UploadPayloadFile>())
+			const resolvedRequests = (
+				await Promise.all(
+					requests.map(async (req) => await req.json<UploadPayloadFile[]>())
+				)
+			).flat();
+
+			const requestMap = resolvedRequests.reduce<{
+				[key: string]: UploadPayloadFile;
+			}>(
+				(requestMap, req) => Object.assign(requestMap, { [req.key]: req }),
+				{}
 			);
-
-			const sortedRequests = resolvedRequests.sort((a, b) => {
-				const aKey = a.key as string;
-				const bKey = b.key as string;
-
-				return aKey?.localeCompare(bKey);
-			});
 
 			for (const req of requests) {
 				expect(req.headers.get("Authorization")).toBe(
@@ -2563,38 +2566,34 @@ and that at least one include rule is provided.
 				);
 			}
 
-			expect(sortedRequests[0]).toMatchObject([
-				{
-					base64: true,
-					key: "95dedb64e6d4940fc2e0f11f711cc2f4",
-					metadata: {
-						contentType: "application/octet-stream",
-					},
-					value: "aGVhZGVyc2ZpbGU=",
-				},
-			]);
+			expect(Object.keys(requestMap).length).toBe(3);
 
-			expect(sortedRequests[1]).toMatchObject([
-				{
-					base64: true,
-					key: "2082190357cfd3617ccfe04f340c6247",
-					metadata: {
-						contentType: "image/png",
-					},
-					value: "Zm9vYmFy",
+			expect(requestMap["95dedb64e6d4940fc2e0f11f711cc2f4"]).toMatchObject({
+				base64: true,
+				key: "95dedb64e6d4940fc2e0f11f711cc2f4",
+				metadata: {
+					contentType: "application/octet-stream",
 				},
-			]);
+				value: "aGVhZGVyc2ZpbGU=",
+			});
 
-			expect(sortedRequests[2]).toMatchObject([
-				{
-					base64: true,
-					key: "09a79777abda8ccc8bdd51dd3ff8e9e9",
-					metadata: {
-						contentType: "application/javascript",
-					},
-					value: "ZnVuYw==",
+			expect(requestMap["2082190357cfd3617ccfe04f340c6247"]).toMatchObject({
+				base64: true,
+				key: "2082190357cfd3617ccfe04f340c6247",
+				metadata: {
+					contentType: "image/png",
 				},
-			]);
+				value: "Zm9vYmFy",
+			});
+
+			expect(requestMap["09a79777abda8ccc8bdd51dd3ff8e9e9"]).toMatchObject({
+				base64: true,
+				key: "09a79777abda8ccc8bdd51dd3ff8e9e9",
+				metadata: {
+					contentType: "application/javascript",
+				},
+				value: "ZnVuYw==",
+			});
 
 			expect(std.out).toMatchInlineSnapshot(`
 			        "✨ Success! Uploaded 3 files (TIMINGS)

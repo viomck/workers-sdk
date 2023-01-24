@@ -49,11 +49,8 @@ import { listScopes, login, logout, validateScopeKeys } from "./user";
 import { whoami } from "./whoami";
 
 import type { Config } from "./config";
-import type { CommonYargsOptions } from "./yargs-types";
-import type { ArgumentsCamelCase } from "yargs";
+import type { CommonYargsArgv, CommonYargsOptions } from "./yargs-types";
 import type Yargs from "yargs";
-
-export type ConfigPath = string | undefined;
 
 const resetColor = "\x1b[0m";
 const fgGreenColor = "\x1b[32m";
@@ -175,7 +172,7 @@ export class CommandLineArgsError extends Error {}
 export function createCLIParser(argv: string[]) {
 	// Type check result against CommonYargsOptions to make sure we've included
 	// all common options
-	const wrangler: Yargs.Argv<CommonYargsOptions> = makeCLI(argv)
+	const wrangler: CommonYargsArgv = makeCLI(argv)
 		.strict()
 		// We handle errors ourselves in a try-catch around `yargs.parse`.
 		// If you want the "help info" to be displayed then throw an instance of `CommandLineArgsError`.
@@ -211,6 +208,11 @@ export function createCLIParser(argv: string[]) {
 			type: "string",
 			requiresArg: true,
 		})
+		.option("experimental-json-config", {
+			alias: "j",
+			describe: `Experimental: Support wrangler.json`,
+			type: "boolean",
+		})
 		.check((args) => {
 			// Grab locally specified env params from `.env` file
 			const loaded = loadDotEnv(".env", args.env);
@@ -220,7 +222,10 @@ export function createCLIParser(argv: string[]) {
 			return true;
 		});
 
-	wrangler.group(["config", "env", "help", "version"], "Flags:");
+	wrangler.group(
+		["experimental-json-config", "config", "env", "help", "version"],
+		"Flags:"
+	);
 	wrangler.help().alias("h", "help");
 
 	// Default help command that supports the subcommands
@@ -485,7 +490,7 @@ export function createCLIParser(argv: string[]) {
 				return;
 			}
 			await login({ browser: args.browser });
-			const config = readConfig(args.config as ConfigPath, args);
+			const config = readConfig(args.config, args);
 			await metrics.sendMetricsEvent("login user", {
 				sendMetrics: config.send_metrics,
 			});
@@ -502,10 +507,10 @@ export function createCLIParser(argv: string[]) {
 		"logout",
 		"🚪 Logout from Cloudflare",
 		() => {},
-		async () => {
+		async (args) => {
 			await printWranglerBanner();
 			await logout();
-			const config = readConfig(undefined, {});
+			const config = readConfig(undefined, args);
 			await metrics.sendMetricsEvent("logout user", {
 				sendMetrics: config.send_metrics,
 			});
@@ -517,10 +522,10 @@ export function createCLIParser(argv: string[]) {
 		"whoami",
 		"🕵️  Retrieve your user info and test your auth config",
 		() => {},
-		async () => {
+		async (args) => {
 			await printWranglerBanner();
 			await whoami();
-			const config = readConfig(undefined, {});
+			const config = readConfig(undefined, args);
 			await metrics.sendMetricsEvent("view accounts", {
 				sendMetrics: config.send_metrics,
 			});
@@ -532,9 +537,9 @@ export function createCLIParser(argv: string[]) {
 		"types",
 		"📝 Generate types from bindings & module rules in config",
 		() => {},
-		async () => {
+		async (args) => {
 			await printWranglerBanner();
-			const config = readConfig(undefined, {});
+			const config = readConfig(undefined, args);
 
 			const configBindings: Partial<Config> = {
 				kv_namespaces: config.kv_namespaces ?? [],
@@ -588,12 +593,7 @@ export function createCLIParser(argv: string[]) {
 								type: "boolean",
 								default: false,
 							}),
-					async (
-						rollbackYargs: ArgumentsCamelCase<{
-							deploymentId: string;
-							yes: boolean;
-						}>
-					) => {
+					async (rollbackYargs) => {
 						const { accountId, scriptName, config } =
 							await initializeDeployments(rollbackYargs, deploymentsWarning);
 
@@ -621,12 +621,7 @@ export function createCLIParser(argv: string[]) {
 								type: "boolean",
 								default: false,
 							}),
-					async (
-						viewYargs: ArgumentsCamelCase<{
-							deploymentId: string;
-							yes: boolean;
-						}>
-					) => {
+					async (viewYargs) => {
 						const { accountId, scriptName, config } =
 							await initializeDeployments(viewYargs, deploymentsWarning);
 
@@ -639,12 +634,7 @@ export function createCLIParser(argv: string[]) {
 					}
 				)
 				.epilogue(deploymentsWarning),
-		async (
-			deploymentsYargs: ArgumentsCamelCase<{
-				name: string;
-				deploymentId: string;
-			}>
-		) => {
+		async (deploymentsYargs) => {
 			const { accountId, scriptName, config } = await initializeDeployments(
 				deploymentsYargs,
 				deploymentsWarning

@@ -5771,6 +5771,77 @@ addEventListener('fetch', event => {});`
 				expect(std.warn).toMatchInlineSnapshot(`""`);
 			});
 
+			it("should support durable objects and D1", async () => {
+				writeWranglerToml({
+					main: "index.js",
+					durable_objects: {
+						bindings: [
+							{
+								name: "EXAMPLE_DO_BINDING",
+								class_name: "ExampleDurableObject",
+							},
+						],
+					},
+					migrations: [{ tag: "v1", new_classes: ["ExampleDurableObject"] }],
+					d1_databases: [
+						{
+							binding: "DB",
+							database_name: "test-d1-db",
+							database_id: "UUID-1-2-3-4",
+							preview_database_id: "UUID-1-2-3-4",
+						},
+					],
+				});
+				const scriptContent = `export class ExampleDurableObject {}; export default{};`;
+				fs.writeFileSync("index.js", scriptContent);
+				mockSubDomainRequest();
+				mockLegacyScriptData({
+					scripts: [{ id: "test-name", migration_tag: "v1" }],
+				});
+				mockUploadWorkerRequest({
+					expectedType: "esm",
+					expectedBindings: [
+						{
+							name: "EXAMPLE_DO_BINDING",
+							class_name: "ExampleDurableObject",
+							type: "durable_object_namespace",
+						},
+						{ name: "DB", type: "d1_database" },
+					],
+				});
+
+				await runWrangler("publish index.js --outdir tmp --dry-run");
+				expect(std.out).toMatchInlineSnapshot(`
+			"Total Upload: xx KiB / gzip: xx KiB
+			Your worker has access to the following bindings:
+			- Durable Objects:
+			  - EXAMPLE_DO_BINDING: ExampleDurableObject
+			- D1 Databases:
+			  - DB: test-d1-db (UUID-1-2-3-4), Preview: (UUID-1-2-3-4)
+			--dry-run: exiting now."
+		`);
+				expect(std.err).toMatchInlineSnapshot(`""`);
+				expect(std.warn).toMatchInlineSnapshot(`
+			"[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mProcessing wrangler.toml configuration:[0m
+
+			    - D1 Bindings are currently in alpha to allow the API to evolve before general availability.
+			      Please report any issues to [4mhttps://github.com/cloudflare/wrangler2/issues/new/choose[0m
+			      Note: Run this command with the environment variable NO_D1_WARNING=true to hide this message
+
+			      For example: \`export NO_D1_WARNING=true && wrangler <YOUR COMMAND HERE>\`
+
+			"
+		`);
+				const output = fs.readFileSync("tmp/d1-beta-facade.entry.js", "utf-8");
+				expect(output).toContain(
+					`var ExampleDurableObject2 = maskDurableObjectDefinition(ExampleDurableObject);`
+				);
+				expect(output).toContain(
+					`ExampleDurableObject2 as ExampleDurableObject,`
+				);
+				expect(output).toContain(`shim_default as default`);
+			});
+
 			it("should error when detecting a service-worker worker implementing durable objects", async () => {
 				writeWranglerToml({
 					durable_objects: {
@@ -6459,6 +6530,61 @@ addEventListener('fetch', event => {});`
 			await runWrangler("publish index.js --outdir some-dir");
 			expect(fs.existsSync("some-dir/index.js")).toBe(true);
 			expect(fs.existsSync("some-dir/index.js.map")).toBe(true);
+			expect(std).toMatchInlineSnapshot(`
+			Object {
+			  "debug": "",
+			  "err": "",
+			  "out": "Total Upload: xx KiB / gzip: xx KiB
+			Uploaded test-name (TIMINGS)
+			Published test-name (TIMINGS)
+			  https://test-name.test-sub-domain.workers.dev
+			Current Deployment ID: Galaxy-Class",
+			  "warn": "",
+			}
+		`);
+		});
+
+		it("should copy any module imports related assets at --outdir if specified", async () => {
+			writeWranglerToml();
+			fs.writeFileSync(
+				"./index.js",
+				`
+import txt from './textfile.txt';
+import hello from './hello.wasm';
+export default{
+  async fetch(){
+		const module = await WebAssembly.instantiate(hello);
+    return new Response(txt + module.exports.hello);
+  }
+}
+`
+			);
+			fs.writeFileSync("./textfile.txt", "Hello, World!");
+			fs.writeFileSync("./hello.wasm", "Hello wasm World!");
+			mockSubDomainRequest();
+			mockUploadWorkerRequest({
+				expectedModules: {
+					"./0a0a9f2a6772942557ab5355d76af442f8f65e01-textfile.txt":
+						"Hello, World!",
+					"./d025a03cd31e98e96fb5bd5bce87f9bca4e8ce2c-hello.wasm":
+						"Hello wasm World!",
+				},
+			});
+			await runWrangler("publish index.js --outdir some-dir");
+
+			expect(fs.existsSync("some-dir/index.js")).toBe(true);
+			expect(fs.existsSync("some-dir/index.js.map")).toBe(true);
+			expect(fs.existsSync("some-dir/README.md")).toBe(true);
+			expect(
+				fs.existsSync(
+					"some-dir/0a0a9f2a6772942557ab5355d76af442f8f65e01-textfile.txt"
+				)
+			).toBe(true);
+			expect(
+				fs.existsSync(
+					"some-dir/d025a03cd31e98e96fb5bd5bce87f9bca4e8ce2c-hello.wasm"
+				)
+			).toBe(true);
 			expect(std).toMatchInlineSnapshot(`
 			Object {
 			  "debug": "",

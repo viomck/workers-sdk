@@ -596,6 +596,7 @@ export function createCLIParser(argv: string[]) {
 							}),
 					async (rollbackYargs) => {
 						if (
+							!rollbackYargs.yes &&
 							!(await confirm(
 								"You are about to Rollback to a previous deployment on the Edge, would you like to continue"
 							))
@@ -618,18 +619,11 @@ export function createCLIParser(argv: string[]) {
 					"view <deployment-id>",
 					"🔍 View a deployment",
 					async (viewYargs) =>
-						viewYargs
-							.positional("deployment-id", {
-								describe: "The ID of the deployment you want to inspect",
-								type: "string",
-								demandOption: true,
-							})
-							.option("yes", {
-								alias: "y",
-								describe: "Skip confirmation prompt",
-								type: "boolean",
-								default: false,
-							}),
+						viewYargs.positional("deployment-id", {
+							describe: "The ID of the deployment you want to inspect",
+							type: "string",
+							demandOption: true,
+						}),
 					async (viewYargs) => {
 						const { accountId, scriptName, config } =
 							await initializeDeployments(viewYargs, deploymentsWarning);

@@ -66,6 +66,13 @@ export function Options(yargs: CommonYargsArgv) {
 				default: true,
 				description: "Whether to run bundling on `_worker.js` before deploying",
 			},
+			"experimental-worker-bundle": {
+				type: "boolean",
+				default: false,
+				hidden: true,
+				description:
+					"Whether to process non-JS module imports or not, such as wasm/text/binary, when we run bundling on `functions` or `_worker.js`",
+			},
 			config: {
 				describe: "Pages does not support wrangler.toml",
 				type: "string",
@@ -85,6 +92,7 @@ export const Handler = async ({
 	skipCaching,
 	bundle,
 	noBundle,
+	experimentalWorkerBundle,
 	config: wranglerConfig,
 }: PublishArgs) => {
 	if (wranglerConfig) {
@@ -251,6 +259,7 @@ export const Handler = async ({
 		commitHash,
 		commitDirty,
 		bundle: bundle ?? !noBundle,
+		experimentalWorkerBundle,
 	});
 
 	saveToConfigCache<PagesConfigCache>(PAGES_CONFIG_CACHE_FILENAME, {

@@ -11,7 +11,7 @@ import { d1 } from "./d1";
 import { deleteHandler, deleteOptions } from "./delete";
 import {
 	deployments,
-	initializeDeployments,
+	commonDeploymentCMDSetup,
 	rollbackDeployment,
 	viewDeployment,
 } from "./deployments";
@@ -588,16 +588,20 @@ export function createCLIParser(argv: string[]) {
 							demandOption: true,
 						}),
 					async (rollbackYargs) => {
+						const firstHash = rollbackYargs.deploymentId.substring(
+							0,
+							rollbackYargs.deploymentId.indexOf("-")
+						);
 						if (
 							!(await confirm(
-								"You are about to Rollback to a previous deployment on the Edge, would you like to continue"
+								`This deployment ${firstHash} will immediately replace the current deployment and become the active deployment across all your deployed routes and domains. However, your local development environment will not be affected by this rollback.`
 							))
 						) {
 							return;
 						}
 
 						const { accountId, scriptName, config } =
-							await initializeDeployments(rollbackYargs, deploymentsWarning);
+							await commonDeploymentCMDSetup(rollbackYargs, deploymentsWarning);
 
 						await rollbackDeployment(
 							accountId,
@@ -618,7 +622,7 @@ export function createCLIParser(argv: string[]) {
 						}),
 					async (viewYargs) => {
 						const { accountId, scriptName, config } =
-							await initializeDeployments(viewYargs, deploymentsWarning);
+							await commonDeploymentCMDSetup(viewYargs, deploymentsWarning);
 
 						await viewDeployment(
 							accountId,
@@ -630,7 +634,7 @@ export function createCLIParser(argv: string[]) {
 				)
 				.epilogue(deploymentsWarning),
 		async (deploymentsYargs) => {
-			const { accountId, scriptName, config } = await initializeDeployments(
+			const { accountId, scriptName, config } = await commonDeploymentCMDSetup(
 				deploymentsYargs,
 				deploymentsWarning
 			);

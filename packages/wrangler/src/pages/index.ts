@@ -1,6 +1,7 @@
 /* eslint-disable no-shadow */
 
 import * as Build from "./build";
+import * as Bundle from "./bundle";
 import * as DeploymentTails from "./deployment-tails";
 import * as Deployments from "./deployments";
 import * as Dev from "./dev";
@@ -46,6 +47,12 @@ export function pages(yargs: CommonYargsArgv) {
 						"Consolidate and optimize the route paths declared in _routes.json",
 						Functions.OptimizeRoutesOptions,
 						Functions.OptimizeRoutesHandler
+					)
+					.command(
+						"bundle",
+						"Build your Pages Functions or _worker.js, extract any external module imports, and bundle everything together",
+						Bundle.Options,
+						Bundle.Handler
 					)
 			)
 			.command("project", "⚡️ Interact with your Pages projects", (yargs) =>

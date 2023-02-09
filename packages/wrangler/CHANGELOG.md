@@ -1,5 +1,11 @@
 # wrangler
 
+## 2.9.2
+
+### Patch Changes
+
+- [#2696](https://github.com/cloudflare/workers-sdk/pull/2696) [`4bc78470`](https://github.com/cloudflare/workers-sdk/commit/4bc784706193e24b7a92a19c0ac76eaa7ddcb1c6) Thanks [@rozenmd](https://github.com/rozenmd)! - fix: don't throw an error when omitting preview_database_id, warn instead
+
 ## 2.9.1
 
 ### Patch Changes

@@ -34,7 +34,6 @@ export const mswSuccessDeployments = [
 								number: "1701-E",
 								annotations: {
 									"workers/triggered_by": "upload",
-									rollback_from: "MOCK-DEPLOYMENT-ID-0000",
 								},
 								metadata: {
 									author_id: "Picard-Gamma-6-0-7-3",
@@ -49,7 +48,7 @@ export const mswSuccessDeployments = [
 								number: "NCC-74656",
 								annotations: {
 									"workers/triggered_by": "SOME-OTHER-TRIGGER",
-									rollback_from: "MOCK-DEPLOYMENT-ID-1111",
+									"workers/rollback_from": "MOCK-DEPLOYMENT-ID-1111",
 								},
 								metadata: {
 									author_id: "Kathryn-Jane-Gamma-6-0-7-3",

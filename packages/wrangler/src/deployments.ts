@@ -8,7 +8,7 @@ import type { ServiceMetadataRes } from "./init";
 type DeploymentDetails = {
 	id: string;
 	number: string;
-	annotations: { "workers/triggered_by": string; rollback_from: string };
+	annotations: Record<string, string>;
 	metadata: {
 		author_id: string;
 		author_email: string;
@@ -58,16 +58,22 @@ export async function deployments(
 		params
 	);
 
-	const versionMessages = deploys.map(
-		(versions) =>
-			`\nDeployment ID: ${versions.id}
-Created on: ${versions.metadata.created_on}
-Author: ${versions.metadata.author_email}
-Source: ${sourceStr(versions.metadata.source)}
-Annotations
-  Triggered by: ${versions.annotations["workers/triggered_by"]}
-  Rollback from: ${versions.annotations.rollback_from}\n`
-	);
+	const versionMessages = deploys.map((versions) => {
+		let version = `\nDeployment ID: ${versions.id}
+Created on:    ${versions.metadata.created_on}
+Author:        ${versions.metadata.author_email}
+Source:        ${sourceStr(versions.metadata.source)}`;
+
+		if (versions.annotations["workers/triggered_by"]) {
+			version += `\nTrigger:       ${versions.annotations["workers/triggered_by"]}`;
+		}
+
+		if (versions.annotations["workers/rollback_from"]) {
+			version += `\nRollback from: ${versions.annotations["workers/rollback_from"]}`;
+		}
+
+		return version + `\n`;
+	});
 
 	versionMessages[versionMessages.length - 1] += "🟩 Active";
 	logger.log(...versionMessages);
